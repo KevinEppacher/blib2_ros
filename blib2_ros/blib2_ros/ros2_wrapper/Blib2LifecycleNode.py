@@ -32,7 +32,6 @@ class Blib2LifecycleNode(LifecycleNode):
     def on_activate(self, state: State):
         try:
             self.image_sub = self.create_subscription(Image, '/rgb', self.image_callback, 10)
-            self.timer = self.create_timer(1.0 / self.timer_frequency, self.timer_callback)
 
             return TransitionCallbackReturn.SUCCESS
         except Exception as e:
@@ -40,8 +39,6 @@ class Blib2LifecycleNode(LifecycleNode):
             return TransitionCallbackReturn.FAILURE
 
     def on_deactivate(self, state: State):
-        if self.timer:
-            self.timer.cancel()
         return TransitionCallbackReturn.SUCCESS
 
     def on_cleanup(self, state: State):

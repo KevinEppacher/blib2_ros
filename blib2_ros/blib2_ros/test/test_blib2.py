@@ -1,72 +1,38 @@
-from PIL import Image
-import requests
-from transformers import Blip2ForConditionalGeneration, AutoProcessor
 import torch
-import sys
-import os
-import torch
-import transformers
-import huggingface_hub
-import requests
+from transformers import Blip2Processor, Blip2Model
 from PIL import Image
-from time import sleep
-import cv2
-import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+import requests
 
-def main(args=None):
-    print("Python Version:", sys.version)
-    print("PyTorch Version:", torch.__version__)
-    print("Transformers Version:", transformers.__version__)
-    print("Hugging Face Hub Version:", huggingface_hub.__version__)
-    print("Hugging Face Transformers Version:", transformers.__version__)
-    # Prüfen, ob CUDA verfügbar ist
-    print("CUDA verfügbar:", torch.cuda.is_available())
-    if torch.cuda.is_available():
-        print("CUDA Version:", torch.version.cuda)
-        print("CUDA Device Name:", torch.cuda.get_device_name(0))
-    # Modell laden
-    # model_name = "Salesforce/blip2-opt-2.7b"
-    model_name = "Salesforce/blip2-flan-t5-xl"
-    processor = AutoProcessor.from_pretrained(model_name)
-    model = Blip2ForConditionalGeneration.from_pretrained(model_name, torch_dtype=torch.float16)
+def main():
+    processor = Blip2Processor.from_pretrained("Salesforce/blip2-opt-2.7b")
+    model = Blip2Model.from_pretrained(
+        "Salesforce/blip2-opt-2.7b",
+        device_map="auto",
+        torch_dtype=torch.float16
+    )
+    model.eval()
 
-    # Pfad zum geladenen Modell anzeigen
-    model_path = transformers.utils.hub.cached_file(model_name, "config.json")
-    print("Modell wurde geladen von:", os.path.dirname(model_path))
+    url = 'https://storage.googleapis.com/sfr-vision-language-research/LAVIS/assets/merlion.png'
+    image = Image.open(requests.get(url, stream=True).raw).convert('RGB')
+    text = "dog"
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    model.to(device)
+    inputs = processor(images=image, text=text, return_tensors="pt").to(model.device)
 
-    url = 'https://storage.googleapis.com/sfr-vision-language-research/LAVIS/assets/merlion.png' 
-    image = Image.open(requests.get(url, stream=True).raw).convert('RGB')   
+    with torch.no_grad():
+        # Bild-Embedding (Text ist leer)
+        inputs_img = processor(images=image, text="", return_tensors="pt").to(model.device)
+        outputs_img = model(**inputs_img)
+        image_embeds = outputs_img['qformer_outputs'].last_hidden_state.mean(dim=1).cpu().numpy()
 
-    # image_path = os.path.join(os.path.dirname(__file__), "test2.png")
-    # image = Image.open(image_path).convert('RGB')
-
-    # Convert PIL image to NumPy array and BGR format for OpenCV
-    image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    cv2.imshow('Merlion Image', image_cv)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-    prompt = "Question: What is next to the cat? Answer:"
-
-    inputs = processor(image, text=prompt, return_tensors="pt").to(device, torch.float16)
-
-    generated_ids = model.generate(**inputs, max_new_tokens=20)
-    generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-    print("Prompt:", prompt)
-    print("generated_text:", generated_text)
-
-    while True:
-        print("looping")
-        sleep(1)
+        # Text-Embedding (Bild ist gleich, Text ist gesetzt)
+        inputs_txt = processor(images=image, text=text, return_tensors="pt").to(model.device)
+        outputs_txt = model(**inputs_txt)
+        text_embeds = outputs_txt['qformer_outputs'].last_hidden_state.mean(dim=1).cpu().numpy()
 
 
-
-
-    # processor = AutoProcessor.from_pretrained("Salesforce/blip2-flan-t5-xl")
-    # model = Blip2ForConditionalGeneration.from_pretrained("Salesforce/blip2-flan-t5-xl")
+    similarity = cosine_similarity(image_embeds, text_embeds)
+    print("Cosine similarity:", similarity[0][0])
 
 if __name__ == "__main__":
     main()
