@@ -1,11 +1,11 @@
 from setuptools import find_packages, setup
 
-package_name = 'blib2_ros'
+package_name = 'blip2_ros'
 
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(include=['blib2_ros', 'blib2_ros.*']),
+    packages=find_packages(include=['blip2_ros', 'blip2_ros.*']),
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -20,8 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'blib2_ros_node = blib2_ros.blib2_ros_node:main',
-            'test_blib2 = blib2_ros.test.test_blib2:main',
+            'blip2_ros_node = blip2_ros.blip2_ros_node:main',
+            'test_blip2 = blip2_ros.test.test_blip2:main',
         ],
     },
 )

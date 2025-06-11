@@ -13,12 +13,12 @@ from PIL import Image as PILImage
 import torch
 
 
-class Blib2LifecycleNode(LifecycleNode):
+class Blip2LifecycleNode(LifecycleNode):
     def __init__(self):
-        super().__init__('blib2_lifecycle_node')
-        self.get_logger().info("Initializing Blib2 Lifecycle Node...")
+        super().__init__('Blip2_lifecycle_node')
+        self.get_logger().info("Initializing Blip2 Lifecycle Node...")
 
-        self.get_logger().info("Finished initializing Blib2LifecycleNode.")
+        self.get_logger().info("Finished initializing Blip2LifecycleNode.")
 
 
     def _declare_parameters(self):
